@@ -30,7 +30,7 @@ import boto.mturk.notification
 from boto.connection import AWSQueryConnection
 from boto.exception import EC2ResponseError
 from boto.resultset import ResultSet
-from boto.mturk.question import QuestionForm, ExternalQuestion, HTMLQuestion
+from boto.mturk.question import QuestionForm, ExternalQuestion, HTMLQuestion, ValidatingXML
 
 
 class MTurkRequestError(EC2ResponseError):
@@ -205,13 +205,19 @@ class MTurkConnection(AWSQueryConnection):
             if question:
                 questions = [question]
             question_param = QuestionForm(questions)
+            if isinstance(question, basestring):
+                question_param = question
             if isinstance(question, QuestionForm):
                 question_param = question
             elif isinstance(question, ExternalQuestion):
                 question_param = question
             elif isinstance(question, HTMLQuestion):
                 question_param = question
-            params['Question'] = question_param.get_as_xml()
+
+            if isinstance(question_param, ValidatingXML):
+                params['Question'] = question_param.get_as_xml()
+            else:
+                params['Question'] = question_param
         else:
             if not neither:
                 raise ValueError("Must not specify question (single Question instance) or questions (list or QuestionForm instance) when specifying hit_layout")
